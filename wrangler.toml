@@ -1,0 +1,8 @@
+name = "blog_admin"
+main = "src/index.ts"
+compatibility_date = "2023-01-22"
+
+[[d1_databases]]
+binding = "DB" # i.e. available in your Worker on env.DB
+database_name = "synopsis"
+database_id = "b007b6bc-bb26-4fa3-8ded-ead469ceb097"
