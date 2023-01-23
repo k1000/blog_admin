@@ -14,6 +14,10 @@ const renderValue = (v: any) => {
   }
 };
 
+const renderQuery = (query: Record<string, string | number>) => {
+  return Object.entries(query).map(([k, v]) => `${k} = ${renderValue(v)}`);
+};
+
 // https://developers.cloudflare.com/d1/get-started/
 export const insertOne = async (tableName: string, data: Query, env: Env) => {
   const { DB } = env;
@@ -22,16 +26,24 @@ export const insertOne = async (tableName: string, data: Query, env: Env) => {
   const sql = `INSERT INTO ${tableName} (${keys.join(
     ', '
   )}) VALUES (${values.join(', ')})`;
-  console.log(sql);
-  return DB.prepare(sql).bind('DB synopsis').all();
+  try {
+    return DB.prepare(sql).all();
+  } catch (e) {
+    console.log(sql);
+    console.error(e);
+  }
 };
 
 // wrangler d1 execute DB --local --command="SELECT * FROM BlogEntries WHERE slug = 'hello-world'"
 export const getOne = async (tableName: string, slug: string, env: Env) => {
   const { DB } = env;
   const sql = `SELECT * FROM ${tableName} WHERE slug = '${slug}'`;
-  console.log(sql);
-  return DB.prepare(sql).all();
+  try {
+    return DB.prepare(sql).all();
+  } catch (e) {
+    console.log(sql);
+    console.error(e);
+  }
 };
 
 export const updateOne = async (
@@ -45,16 +57,24 @@ export const updateOne = async (
   const sql = `UPDATE ${tableName}
     SET ${q.join(', ')}
     WHERE slug = '${slug}'`;
-  // console.log(sql);
-  return DB.prepare(sql).all();
+  try {
+    return DB.prepare(sql).all();
+  } catch (e) {
+    console.log(sql);
+    console.error(e);
+  }
 };
 
 export const deleteOne = async (tableName: string, slug: string, env: Env) => {
   const { DB } = env;
   const sql = `DELETE FROM ${tableName} 
     WHERE slug = '${slug}'`;
-  // console.log(sql);
-  return DB.prepare(sql).all();
+  try {
+    return DB.prepare(sql).all();
+  } catch (e) {
+    console.log(sql);
+    console.error(e);
+  }
 };
 
 export interface RunQuery {
@@ -63,15 +83,15 @@ export interface RunQuery {
   env: Env;
 }
 
-const renderQuery = (query: Record<string, string | number>) => {
-  return Object.entries(query).map(([k, v]) => `${k} = ${renderValue(v)}`);
-};
-
 export const runSelect = async ({ tableName, query = {}, env }: RunQuery) => {
   const { DB } = env;
   const q = renderQuery(query);
   const sql = `SELECT * FROM ${tableName} 
   ${q.length > 0 ? `WHERE ${q.join(' AND ')}` : ''}`;
-  console.log(sql);
-  return DB.prepare(sql).all();
+  try {
+    return DB.prepare(sql).all();
+  } catch (e) {
+    console.log(sql);
+    console.error(e);
+  }
 };

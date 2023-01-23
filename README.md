@@ -8,6 +8,8 @@ Each entry publish page directly to [edge cash API](https://developers.cloudflar
 
 ## How to use
 
+https://blog_admin.selwak.workers.dev
+
 `wrangler dev --local --persist`
 
 populate DB with schema

@@ -50,8 +50,8 @@ CREATE TABLE synopsis (
     tags TEXT,
     createdAt DATETIME NOT NULL,
     isPublic BOOLEAN NOT NULL,
-    PRIMARY KEY (url),
-)
+    PRIMARY KEY (url)
+);
 
 
 -- Path: src/blog.sql

@@ -11,3 +11,7 @@ preview_database_id = "d93d157f-34f9-4212-bad4-9a1d89ff3b81"
 
 [vars]
 ACCESS_TOKEN = "example_dev_token"
+
+services = [
+  { binding = "SYNOPSIS", service = "synopsis", environment = "production" }
+]
