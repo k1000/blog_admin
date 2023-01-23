@@ -39,6 +39,21 @@ CREATE TABLE blog_comments (
     FOREIGN KEY (blog_slug) REFERENCES blog(slug)
 );
 
+DROP TABLE IF EXISTS synopsis;
+CREATE TABLE synopsis (
+    url TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT,
+    summary TEXT,
+    author TEXT,
+    publishedAt DATE,
+    tags TEXT,
+    createdAt DATETIME NOT NULL,
+    isPublic BOOLEAN NOT NULL,
+    PRIMARY KEY (url),
+)
+
+
 -- Path: src/blog.sql
 INSERT INTO blog_categories VALUES ('Misc', 'misc'), ('Programming', 'programming'), ('Web Development', 'web-development');
 

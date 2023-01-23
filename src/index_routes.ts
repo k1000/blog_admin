@@ -12,8 +12,7 @@
 
 import { marked } from 'marked';
 import { IRequest, Router } from 'itty-router';
-
-import { deleteOne, getOne, insertOne, runSelect, updateOne } from './sql';
+import { deleteOne, getOne, insertRow, runSelect, updateOne } from './sql';
 
 const router = Router();
 export interface Env {
@@ -42,17 +41,11 @@ const jsonResponse = async (data: any) => {
   });
 };
 
-const authorization = (request: IRequest, env: Env) => {
+const protectAccess = (request: IRequest, env: Env) => {
   const authorization = request.headers.get('Authorization');
-  try {
-    const [scheme, encoded] = authorization.split(' ');
-    if (!encoded || encoded !== env.ACCESS_TOKEN) {
-      return false;
-    }
-  } catch (e) {
-    return false;
+  if (!authorization || authorization !== env.ACCESS_TOKEN) {
+    return new Response('Unauthorized', { status: 401 });
   }
-  return true;
 };
 
 router.get('/', async (request, env) => {
@@ -67,33 +60,25 @@ router.get('/blog/', async (request, env) => {
 });
 
 router.post('/blog', async (request, env) => {
-  const isAuthorized = authorization(request, env);
-  if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
-
   const tableName = 'blog';
+  protectAccess(request, env);
   const blogEntry: BlogEntry = await request.json();
-  console.log(blogEntry);
   const html = marked.parse(blogEntry.md);
+  console.log(blogEntry);
   const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
-  const createdAt = new Date().toISOString();
-  const result = await insertOne(
-    tableName,
-    { ...blogEntry, html, link, createdAt },
-    env
-  );
+  // const createdAt = " date('now') ";
+  const result = await insertRow(tableName, { ...blogEntry, html, link }, env);
   return jsonResponse(result);
 });
 
 router.put('/blog/:slug', async (request, env) => {
-  const isAuthorized = authorization(request, env);
-  if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
-
   const { slug } = request.params;
+  protectAccess(request, env);
   const tableName = 'blog';
   const blogEntry: BlogEntry = await request.json();
   const html = marked.parse(blogEntry.md);
   const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
-  const updatedAt = " DATETIME('now') ";
+  const updatedAt = "date('now')";
   const result = await updateOne(
     tableName,
     slug,
@@ -111,21 +96,18 @@ router.get('/blog/:slug', async (request, env) => {
 });
 
 router.delete('/blog/:slug', async (request, env) => {
-  const isAuthorized = authorization(request, env);
-  if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
-
   const tableName = 'blog';
   const { slug } = request.params;
   const result = await deleteOne(tableName, slug, env);
   return jsonResponse(result);
 });
 
-// router.get('/blog/:category_slug/', async (request, env) => {
-//   const { category_slug } = request.params;
-//   const tableName = 'blog';
-//   const result = await runSelect({ tableName, { category_slug }, env });
-//   return jsonResponse(result);
-// });
+router.get('/blog/:category_slug/:slug', async (request, env) => {
+  const { category_slug, slug } = request.params;
+  const tableName = 'blog';
+  const result = await getOne(tableName, slug, env);
+  return jsonResponse(result);
+});
 
 // 404 for everything else
 router.all('*', () => new Response('Not Found.', { status: 404 }));
