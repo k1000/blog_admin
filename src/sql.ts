@@ -1,7 +1,7 @@
 import { Env } from '.';
 
 export interface Query {
-  [key: string]: string | number;
+  [key: string]: string | number | boolean;
 }
 
 const renderValue = (v: any) => {
@@ -14,7 +14,7 @@ const renderValue = (v: any) => {
   }
 };
 
-const renderQuery = (query: Record<string, string | number>) => {
+const renderQuery = (query: Record<string, string | number | boolean>) => {
   return Object.entries(query).map(([k, v]) => `${k} = ${renderValue(v)}`);
 };
 

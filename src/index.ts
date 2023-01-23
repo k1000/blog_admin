@@ -30,6 +30,8 @@ export interface BlogEntry {
   tags: string;
   category_slug: string;
   description: string;
+  isPublished: boolean;
+  image?: string;
 }
 
 export interface Query {
