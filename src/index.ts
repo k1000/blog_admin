@@ -13,7 +13,14 @@
 import { marked } from 'marked';
 import { IRequest, Router } from 'itty-router';
 
-import { deleteOne, getOne, insertOne, runSelect, updateOne } from './sql';
+import {
+  deleteOne,
+  getOne,
+  insertOne,
+  runQuery,
+  runSelect,
+  updateOne,
+} from './sql';
 
 const router = Router();
 export interface Env {
@@ -119,6 +126,15 @@ router.delete('/blog/:slug', async (request, env) => {
   const tableName = 'blog';
   const { slug } = request.params;
   const result = await deleteOne(tableName, slug, env);
+  return jsonResponse(result);
+});
+
+router.get('/query', async (request, env) => {
+  const isAuthorized = authorization(request, env);
+  if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
+
+  const { sql } = request.params;
+  const result = runQuery(sql, env);
   return jsonResponse(result);
 });
 
