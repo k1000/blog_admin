@@ -1,4 +1,4 @@
-import { Env } from '.';
+import { BlogEntry, Env } from '.';
 
 export interface Query {
   [key: string]: string | number | boolean;
@@ -6,7 +6,9 @@ export interface Query {
 
 const renderValue = (v: any) => {
   if (typeof v === 'string') {
-    return `'${v}'`;
+    return ["date('now')", "datetime('now')"].includes(v.trim().toLowerCase())
+      ? v
+      : `'${v}'`;
   } else if (Array.isArray(v) || typeof v === 'object') {
     return `'${JSON.stringify(v)}'`;
   } else {
@@ -18,19 +20,27 @@ const renderQuery = (query: Record<string, string | number | boolean>) => {
   return Object.entries(query).map(([k, v]) => `${k} = ${renderValue(v)}`);
 };
 
+export function sanitizeString(str: string) {
+  // whitelist a-z, 0-9, space, comma, period, dash, underscore
+  str = str.replace(/[^a-z0-9 \.,_-]/gim, '');
+  return str.trim();
+}
 // https://developers.cloudflare.com/d1/get-started/
 export const insertOne = async (tableName: string, data: Query, env: Env) => {
   const keys = Object.keys(data);
   const values = Object.values(data).map((v) => renderValue(v));
   const sql = `INSERT INTO ${tableName} (${keys.join(
     ', '
-  )}) VALUES (${values.join(', ')})`;
+  )}) VALUES ( ${values.join(', ')})`;
   return runQuery(sql, env);
 };
 
 // wrangler d1 execute DB --local --command="SELECT * FROM BlogEntries WHERE slug = 'hello-world'"
 export const getOne = async (tableName: string, slug: string, env: Env) => {
-  const sql = `SELECT * FROM ${tableName} WHERE slug = '${slug}'`;
+  const sql = `SELECT * FROM ${tableName} WHERE slug = '${sanitizeString(
+    slug
+  )}' LIMIT 1`;
+  console.log(sql);
   return runQuery(sql, env);
 };
 
@@ -41,26 +51,30 @@ export const updateOne = async (
   env: Env
 ) => {
   const q = renderQuery(query);
-  const sql = `UPDATE ${tableName}
-    SET ${q.join(', ')}
-    WHERE slug = '${slug}'`;
+  const sql = `
+    UPDATE ${tableName} SET ${q.join(', ')} WHERE slug = '${slug}';
+    SELECT * FROM ${tableName} WHERE slug = '${slug}'`;
   return runQuery(sql, env);
 };
 
 export const deleteOne = async (tableName: string, slug: string, env: Env) => {
   const sql = `DELETE FROM ${tableName} 
-    WHERE slug = '${slug}'`;
+    WHERE slug = '${sanitizeString(slug)}'`;
   return runQuery(sql, env);
 };
 
-export interface RunSelect {
+export interface RunSelect<BlogEntry> {
   tableName: string;
-  query?: Record<string, string | number>;
+  query?: Partial<BlogEntry>;
   env: Env;
 }
 
-export const runSelect = async ({ tableName, query = {}, env }: RunSelect) => {
-  const q = renderQuery(query);
+export const runSelect = async ({
+  tableName,
+  query,
+  env,
+}: RunSelect<BlogEntry>) => {
+  const q = renderQuery(query as any);
   const sql = `SELECT * FROM ${tableName} 
   ${q.length > 0 ? `WHERE ${q.join(' AND ')}` : ''}`;
   return runQuery(sql, env);
@@ -68,10 +82,6 @@ export const runSelect = async ({ tableName, query = {}, env }: RunSelect) => {
 
 export const runQuery = async (sql: string, env: Env) => {
   const { DB } = env;
-  try {
-    return DB.prepare(sql).all();
-  } catch (e) {
-    console.log(sql);
-    console.error(e);
-  }
+
+  return DB.prepare(sql).all();
 };

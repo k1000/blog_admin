@@ -46,7 +46,10 @@ export interface Query {
 }
 
 const jsonResponse = async (data: any) => {
-  return new Response(JSON.stringify(data), {
+  if (data.error) {
+    return new Response(JSON.stringify(data), { status: 500 });
+  }
+  return new Response(JSON.stringify(data.results), {
     headers: { 'Content-Type': 'application/json' },
   });
 };
@@ -71,7 +74,11 @@ router.get('/', async (request, env) => {
 
 router.get('/blog/', async (request, env) => {
   const tableName = 'blog';
-  const result = await runSelect({ tableName, env });
+  const isAuthorized = authorization(request, env);
+  const query = !isAuthorized
+    ? ({ isPublished: 1 } as unknown as BlogEntry)
+    : {};
+  const result = await runSelect({ tableName, env, query });
   return jsonResponse(result);
 });
 
@@ -81,10 +88,9 @@ router.post('/blog', async (request, env) => {
 
   const tableName = 'blog';
   const blogEntry: BlogEntry = await request.json();
-  console.log(blogEntry);
   const html = marked.parse(blogEntry.md);
   const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
-  const createdAt = new Date().toISOString();
+  const createdAt = "datetime('now')";
   const result = await insertOne(
     tableName,
     { ...blogEntry, html, link, createdAt },
@@ -101,12 +107,12 @@ router.put('/blog/:slug', async (request, env) => {
   const tableName = 'blog';
   const blogEntry: BlogEntry = await request.json();
   const html = marked.parse(blogEntry.md);
-  const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
-  const updatedAt = " DATETIME('now') ";
+  // const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
+  const updatedAt = "datetime('now')";
   const result = await updateOne(
     tableName,
     slug,
-    { ...blogEntry, html, link, updatedAt },
+    { ...blogEntry, html, updatedAt },
     env
   );
   return jsonResponse(result);
@@ -115,7 +121,8 @@ router.put('/blog/:slug', async (request, env) => {
 router.get('/blog/:slug', async (request, env) => {
   const tableName = 'blog';
   const { slug } = request.params;
-  const result = getOne(tableName, slug, env);
+  console.log('slug', slug);
+  const result = await getOne(tableName, slug, env);
   return jsonResponse(result);
 });
 
@@ -129,12 +136,13 @@ router.delete('/blog/:slug', async (request, env) => {
   return jsonResponse(result);
 });
 
-router.get('/query', async (request, env) => {
+router.post('/query', async (request, env) => {
   const isAuthorized = authorization(request, env);
   if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
 
-  const { sql } = request.params;
-  const result = runQuery(sql, env);
+  const { sql } = await request.json();
+  if (!sql) return new Response('Missing SQL', { status: 400 });
+  const result = await runQuery(sql, env);
   return jsonResponse(result);
 });
 
