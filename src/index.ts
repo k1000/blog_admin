@@ -45,6 +45,8 @@ export interface Query {
   [key: string]: string | number;
 }
 
+const tableName = 'blog';
+
 const jsonResponse = async (data: any) => {
   if (data.error) {
     return new Response(JSON.stringify(data), { status: 500 });
@@ -73,7 +75,6 @@ router.get('/', async (request, env) => {
 });
 
 router.get('/blog/', async (request, env) => {
-  const tableName = 'blog';
   const isAuthorized = authorization(request, env);
   const query = !isAuthorized
     ? ({ isPublished: 1 } as unknown as BlogEntry)
@@ -86,7 +87,6 @@ router.post('/blog', async (request, env) => {
   const isAuthorized = authorization(request, env);
   if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
 
-  const tableName = 'blog';
   const blogEntry: BlogEntry = await request.json();
   const html = marked.parse(blogEntry.md);
   const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
@@ -104,22 +104,25 @@ router.put('/blog/:slug', async (request, env) => {
   if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
 
   const { slug } = request.params;
-  const tableName = 'blog';
+
   const blogEntry: BlogEntry = await request.json();
-  const html = marked.parse(blogEntry.md);
-  // const link = `/${blogEntry.category_slug}/${blogEntry.slug}`;
+  if ('md' in blogEntry) {
+    blogEntry.html = marked.parse(blogEntry.md);
+  }
+  if ('category_slug' in blogEntry) {
+    blogEntry.link = `/${blogEntry.category_slug}/${blogEntry.slug ?? slug}`;
+  }
   const updatedAt = "datetime('now')";
   const result = await updateOne(
     tableName,
     slug,
-    { ...blogEntry, html, updatedAt },
+    { ...blogEntry, updatedAt },
     env
   );
   return jsonResponse(result);
 });
 
 router.get('/blog/:slug', async (request, env) => {
-  const tableName = 'blog';
   const { slug } = request.params;
   console.log('slug', slug);
   const result = await getOne(tableName, slug, env);
@@ -130,7 +133,6 @@ router.delete('/blog/:slug', async (request, env) => {
   const isAuthorized = authorization(request, env);
   if (!isAuthorized) return new Response('Unauthorized', { status: 401 });
 
-  const tableName = 'blog';
   const { slug } = request.params;
   const result = await deleteOne(tableName, slug, env);
   return jsonResponse(result);
@@ -148,7 +150,7 @@ router.post('/query', async (request, env) => {
 
 // router.get('/blog/:category_slug/', async (request, env) => {
 //   const { category_slug } = request.params;
-//   const tableName = 'blog';
+//
 //   const result = await runSelect({ tableName, { category_slug }, env });
 //   return jsonResponse(result);
 // });
