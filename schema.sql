@@ -53,6 +53,25 @@ CREATE TABLE synopsis (
     PRIMARY KEY (url)
 );
 
+DROP TABLE IF EXISTS prompt;
+CREATE TABLE prompt (
+    id INTEGER NOT NULL,
+    name TEXT NOT NULL,
+    modelName TEXT NOT NULL,
+    temperature INTEGER NOT NULL,
+    topP REAL NOT NULL,
+    topK INTEGER NOT NULL,
+    maxTokens INTEGER NOT NULL,
+    insertBeginningRequest TEXT,
+
+    insertBeginningResponse TEXT,
+    outputFormat TEXT,
+    categoty TEXT,
+    tags TEXT,
+    createdAt DATETIME NOT NULL,
+    isPublic BOOLEAN NOT NULL,
+    PRIMARY KEY (id)
+);
 
 -- Path: src/blog.sql
 INSERT INTO blog_categories VALUES ('Misc', 'misc'), ('Programming', 'programming'), ('Web Development', 'web-development');
