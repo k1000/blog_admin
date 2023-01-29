@@ -31,17 +31,16 @@ export const insertOne = async (tableName: string, data: Query, env: Env) => {
   const values = Object.values(data).map((v) => renderValue(v));
   const sql = `INSERT INTO ${tableName} (${keys.join(
     ', '
-  )}) VALUES ( ${values.join(', ')})`;
-  return runQuery(sql, env);
+  )}) VALUES ( ${values.join(', ')});`;
+  return (await runQuery(sql, env)).run();
 };
 
 // wrangler d1 execute DB --local --command="SELECT * FROM BlogEntries WHERE slug = 'hello-world'"
 export const getOne = async (tableName: string, slug: string, env: Env) => {
   const sql = `SELECT * FROM ${tableName} WHERE slug = '${sanitizeString(
     slug
-  )}' LIMIT 1`;
-  console.log(sql);
-  return runQuery(sql, env);
+  )}' LIMIT 1;`;
+  return (await runQuery(sql, env)).all();
 };
 
 export const updateOne = async (
@@ -52,15 +51,14 @@ export const updateOne = async (
 ) => {
   const q = renderQuery(query);
   const sql = `
-    UPDATE ${tableName} SET ${q.join(', ')} WHERE slug = '${slug}';
-    SELECT * FROM ${tableName} WHERE slug = '${slug}'`;
-  return runQuery(sql, env);
+    UPDATE ${tableName} SET ${q.join(', ')} WHERE slug = '${slug}'`;
+  return (await runQuery(sql, env)).all();
 };
 
 export const deleteOne = async (tableName: string, slug: string, env: Env) => {
   const sql = `DELETE FROM ${tableName} 
-    WHERE slug = '${sanitizeString(slug)}'`;
-  return runQuery(sql, env);
+    WHERE slug = '${sanitizeString(slug)}';`;
+  return (await runQuery(sql, env)).run();
 };
 
 export interface RunSelect<BlogEntry> {
@@ -77,11 +75,10 @@ export const runSelect = async ({
   const q = renderQuery(query as any);
   const sql = `SELECT * FROM ${tableName} 
   ${q.length > 0 ? `WHERE ${q.join(' AND ')}` : ''}`;
-  return runQuery(sql, env);
+  return (await runQuery(sql, env)).all();
 };
 
 export const runQuery = async (sql: string, env: Env) => {
   const { DB } = env;
-
-  return DB.prepare(sql).all();
+  return DB.prepare(sql);
 };
