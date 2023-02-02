@@ -67,16 +67,16 @@ export interface RunSelect<BlogEntry> {
   env: Env;
 }
 
-export const runSelect = async ({
+export async function runSelect<BlogEntry>({
   tableName,
   query,
   env,
-}: RunSelect<BlogEntry>) => {
+}: RunSelect<BlogEntry>) {
   const q = renderQuery(query as any);
   const sql = `SELECT * FROM ${tableName} 
   ${q.length > 0 ? `WHERE ${q.join(' AND ')}` : ''}`;
   return (await runQuery(sql, env)).all();
-};
+}
 
 export const runQuery = async (sql: string, env: Env) => {
   const { DB } = env;
